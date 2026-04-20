@@ -1,0 +1,2323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coffee Shop Sales Performance Review — Maven Roasters NYC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --brown-950: #1C0A00;
+  --brown-900: #2C1000;
+  --brown-800: #4A1C00;
+  --brown-700: #6B3120;
+  --brown-600: #8B4513;
+  --brown-500: #A0522D;
+  --brown-400: #C1724F;
+  --brown-300: #D4956E;
+  --brown-200: #E8C5A8;
+  --brown-100: #F5E6D8;
+  --brown-50:  #FBF4EE;
+  --cream:     #FDFAF7;
+  --white:     #FFFFFF;
+  --text-primary: #1C0A00;
+  --text-secondary: #5C3A1E;
+  --text-muted: #8B6B52;
+  --border: #E2CDB8;
+  --shadow-sm: 0 1px 3px rgba(28,10,0,0.08);
+  --shadow-md: 0 4px 16px rgba(28,10,0,0.10);
+  --shadow-lg: 0 8px 32px rgba(28,10,0,0.12);
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --max-w: 1100px;
+  --section-pad: 80px 24px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--text-primary);
+  background: var(--cream);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,h2,h3,h4 { font-family: 'DM Serif Display', serif; line-height: 1.2; }
+
+.container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+
+/* ── NAV ── */
+#nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: rgba(28,10,0,0.96);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 0 24px;
+  height: 56px;
+  display: flex; align-items: center;
+}
+.nav-inner {
+  max-width: var(--max-w); margin: 0 auto; width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.nav-brand {
+  font-family: 'DM Serif Display', serif;
+  color: var(--brown-200);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nav-links {
+  display: flex; gap: 4px; overflow-x: auto;
+  scrollbar-width: none; -ms-overflow-style: none;
+  padding-left: 16px;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a {
+  color: rgba(255,255,255,0.55);
+  text-decoration: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: all 0.15s;
+  letter-spacing: 0.01em;
+}
+.nav-links a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+/* ── HERO ── */
+#hero {
+  min-height: 100vh;
+  background: linear-gradient(165deg, var(--brown-950) 0%, var(--brown-900) 40%, #3D1800 100%);
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 120px 24px 64px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-pattern {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle at 20% 80%, rgba(161,82,45,0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(107,49,32,0.2) 0%, transparent 40%);
+}
+.hero-content { max-width: var(--max-w); margin: 0 auto; width: 100%; position: relative; }
+.hero-label {
+  display: inline-block;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brown-300);
+  border: 1px solid rgba(193,114,79,0.4);
+  padding: 6px 14px; border-radius: 100px;
+  margin-bottom: 24px;
+}
+.hero-title {
+  font-size: clamp(36px, 6vw, 72px);
+  color: var(--white);
+  margin-bottom: 16px;
+  max-width: 800px;
+}
+.hero-subtitle {
+  font-size: clamp(15px, 2vw, 19px);
+  color: rgba(255,255,255,0.6);
+  max-width: 560px;
+  margin-bottom: 48px;
+  font-weight: 300;
+}
+.hero-chips {
+  display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 40px;
+}
+.hero-chip {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 100px;
+  padding: 10px 20px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.hero-chip-val {
+  font-size: 20px; font-weight: 600; color: var(--white);
+  font-family: 'DM Serif Display', serif;
+}
+.hero-chip-label {
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+}
+.hero-byline {
+  font-size: 13px; color: rgba(255,255,255,0.35);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 20px;
+}
+
+/* ── SECTIONS ── */
+section { padding: var(--section-pad); }
+section:nth-child(even) { background: var(--white); }
+
+.section-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--brown-500);
+  margin-bottom: 12px;
+}
+.section-title {
+  font-size: clamp(26px, 4vw, 42px);
+  color: var(--brown-900);
+  margin-bottom: 16px;
+}
+.section-subtitle {
+  font-size: 16px; color: var(--text-secondary);
+  max-width: 640px; margin-bottom: 48px;
+  font-weight: 300;
+}
+
+/* ── DISCLAIMER ── */
+#disclaimer {
+  background: var(--brown-50);
+  border-top: 3px solid var(--brown-300);
+  padding: 48px 24px;
+}
+.disclaimer-box {
+  max-width: var(--max-w); margin: 0 auto;
+  display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: start;
+}
+.disclaimer-icon {
+  width: 40px; height: 40px;
+  background: var(--brown-200);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 18px;
+}
+.disclaimer-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px; color: var(--brown-800); margin-bottom: 10px;
+}
+.disclaimer-body { font-size: 14px; color: var(--text-secondary); line-height: 1.75; }
+
+/* ── KPI CARDS ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 48px;
+}
+.kpi-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+.kpi-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(24px, 3vw, 36px);
+  color: var(--brown-800);
+  margin-bottom: 4px;
+}
+.kpi-label {
+  font-size: 12px; font-weight: 500; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.kpi-note { font-size: 12px; color: var(--brown-400); margin-top: 6px; }
+
+/* ── CHARTS ── */
+.chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.chart-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.chart-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+.chart-card-title {
+  font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--text-secondary); margin-bottom: 4px;
+}
+.chart-card-note { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+.chart-container { position: relative; width: 100%; }
+.chart-container canvas { max-height: 260px; }
+.chart-container.tall canvas { max-height: 320px; }
+
+/* ── INSIGHT BOX ── */
+.insight-box {
+  background: var(--brown-50);
+  border-left: 3px solid var(--brown-500);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 16px 20px;
+  margin-top: 24px;
+  font-size: 14px; color: var(--brown-800);
+  line-height: 1.7;
+}
+.insight-box strong { color: var(--brown-700); }
+
+/* ── REVENUE QUALITY ── */
+.quality-comparison {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;
+}
+.callout-card {
+  background: var(--brown-900);
+  border-radius: var(--radius-md);
+  padding: 28px;
+  color: var(--white);
+}
+.callout-card h3 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brown-300); margin-bottom: 8px; }
+.callout-big { font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--white); margin-bottom: 4px; }
+.callout-sub { font-size: 13px; color: rgba(255,255,255,0.55); }
+
+/* ── AUP COMPARISON ── */
+.aup-bars { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
+.aup-row { display: grid; grid-template-columns: 140px 1fr 60px; align-items: center; gap: 12px; }
+.aup-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+.aup-bar-bg { background: var(--brown-100); border-radius: 100px; height: 10px; overflow: hidden; }
+.aup-bar-fill { height: 100%; border-radius: 100px; background: var(--brown-600); }
+.aup-val { font-size: 13px; font-weight: 600; color: var(--brown-700); text-align: right; }
+
+/* ── CATEGORY MIX ── */
+.category-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+.tab-btn {
+  padding: 8px 18px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 500;
+  color: var(--text-muted); cursor: pointer;
+  transition: all 0.15s;
+}
+.tab-btn.active { background: var(--brown-700); border-color: var(--brown-700); color: var(--white); }
+.tab-btn:hover:not(.active) { border-color: var(--brown-400); color: var(--brown-700); }
+
+.index-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; }
+.index-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+.index-store { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brown-500); margin-bottom: 12px; }
+.index-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
+.index-item:last-child { margin-bottom: 0; }
+.index-cat { color: var(--text-secondary); }
+.index-badge {
+  font-size: 11px; font-weight: 600; padding: 3px 8px;
+  border-radius: 100px; letter-spacing: 0.03em;
+}
+.index-over { background: #FEF2E7; color: #A0522D; }
+.index-under { background: #F0F4F8; color: #5C7A99; }
+.index-neutral { background: var(--brown-50); color: var(--text-muted); }
+
+/* ── DAYPART RHYTHM ── */
+.daypart-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; }
+.daypart-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+.daypart-store { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brown-500); margin-bottom: 16px; }
+.daypart-bars { display: flex; flex-direction: column; gap: 10px; }
+.daypart-row { display: grid; grid-template-columns: 90px 1fr 44px; align-items: center; gap: 8px; }
+.dp-label { font-size: 12px; color: var(--text-muted); }
+.dp-bar-bg { background: var(--brown-100); border-radius: 100px; height: 8px; overflow: hidden; }
+.dp-bar-fill { height: 100%; border-radius: 100px; }
+.dp-morning { background: var(--brown-400); }
+.dp-midday { background: #D4A853; }
+.dp-late { background: var(--brown-800); }
+.dp-pct { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-align: right; }
+
+/* ── STORE PROFILES ── */
+.profile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.profile-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+.profile-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: var(--brown-600);
+}
+.profile-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 64px; color: var(--brown-100);
+  position: absolute; right: 20px; top: 10px;
+  line-height: 1;
+}
+.profile-store-name {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--brown-500); margin-bottom: 8px;
+}
+.profile-mission {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px; color: var(--brown-900); margin-bottom: 16px;
+  line-height: 1.3;
+}
+.profile-mission em { font-style: italic; color: var(--brown-600); }
+.profile-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.profile-tag {
+  font-size: 11px; font-weight: 500;
+  background: var(--brown-50);
+  color: var(--brown-700);
+  border: 1px solid var(--brown-200);
+  padding: 4px 10px;
+  border-radius: 100px;
+}
+.profile-dominant {
+  font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+}
+
+/* ── MAP ── */
+#map-section { padding: var(--section-pad); }
+#map { height: 440px; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md); }
+.leaflet-popup-content-wrapper {
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 1.5px solid var(--border) !important;
+  padding: 0 !important;
+}
+.leaflet-popup-content { margin: 0 !important; }
+.map-popup {
+  padding: 18px 20px;
+  min-width: 240px;
+  font-family: 'DM Sans', sans-serif;
+}
+.map-popup-store {
+  font-size: 14px; font-weight: 600; color: var(--brown-900); margin-bottom: 12px;
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+.map-popup-section { margin-bottom: 10px; }
+.map-popup-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--brown-500); margin-bottom: 4px;
+}
+.map-popup-items { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+.map-popup-uplift {
+  background: var(--brown-50);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 12px;
+}
+.map-popup-uplift strong { font-size: 15px; color: var(--brown-700); }
+
+/* ── RECOMMENDATIONS ── */
+.rec-tabs { display: flex; gap: 8px; margin-bottom: 32px; }
+.rec-panel { display: none; }
+.rec-panel.active { display: block; }
+.rec-header {
+  background: var(--brown-900);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 28px 32px;
+  color: var(--white);
+}
+.rec-store-name { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brown-300); margin-bottom: 8px; }
+.rec-headline { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--white); margin-bottom: 8px; }
+.rec-tagline { font-size: 14px; color: rgba(255,255,255,0.6); font-style: italic; }
+.rec-body {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding: 32px;
+}
+.rec-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+.rec-col-title {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--brown-500); margin-bottom: 14px;
+}
+.rec-items { list-style: none; }
+.rec-items li {
+  font-size: 14px; color: var(--text-secondary);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--brown-50);
+  display: flex; align-items: center; gap: 8px;
+}
+.rec-items li:last-child { border-bottom: none; }
+.rec-items li::before { content: '→'; color: var(--brown-400); font-size: 12px; flex-shrink: 0; }
+.rec-insight {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: var(--brown-50);
+  border-radius: var(--radius-sm);
+  font-size: 14px; color: var(--brown-800); line-height: 1.7;
+}
+.rec-target-time {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--brown-100);
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 12px; font-weight: 600;
+  color: var(--brown-800);
+  margin-bottom: 24px;
+}
+/* Accordion for mobile recs */
+.rec-accordion { display: none; }
+.acc-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.acc-trigger {
+  width: 100%; padding: 18px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--white);
+  border: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  text-align: left;
+}
+.acc-trigger-left { display: flex; flex-direction: column; }
+.acc-trigger-store { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brown-500); }
+.acc-trigger-headline { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--brown-900); }
+.acc-arrow { font-size: 18px; color: var(--brown-400); transition: transform 0.2s; }
+.acc-item.open .acc-arrow { transform: rotate(180deg); }
+.acc-content {
+  display: none;
+  padding: 0 20px 20px;
+  background: var(--white);
+}
+.acc-item.open .acc-content { display: block; }
+.acc-section-title {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--brown-500);
+  margin: 16px 0 8px;
+}
+
+/* ── UPLIFT ── */
+.uplift-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 40px; }
+.uplift-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.uplift-store { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brown-500); margin-bottom: 8px; }
+.uplift-amount {
+  font-family: 'DM Serif Display', serif;
+  font-size: 36px; color: var(--brown-800); margin-bottom: 4px;
+}
+.uplift-pct { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+.uplift-tag {
+  display: inline-block;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  background: #FEF2E7; color: #A0522D;
+  padding: 4px 10px; border-radius: 100px;
+}
+.methodology-box {
+  background: var(--brown-50);
+  border: 1px solid var(--brown-200);
+  border-radius: var(--radius-md);
+  padding: 28px 32px;
+}
+.methodology-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px; color: var(--brown-900); margin-bottom: 16px;
+}
+.method-steps { display: flex; flex-direction: column; gap: 12px; }
+.method-step {
+  display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start;
+}
+.method-num {
+  width: 28px; height: 28px;
+  background: var(--brown-700); color: var(--white);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.method-text { font-size: 13px; color: var(--text-secondary); line-height: 1.6; padding-top: 4px; }
+.method-caveat {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--brown-200);
+  font-size: 12px; color: var(--text-muted); line-height: 1.7;
+  font-style: italic;
+}
+
+/* ── APPENDIX ── */
+#appendix { background: var(--brown-950); }
+#appendix .section-label { color: var(--brown-400); }
+#appendix .section-title { color: var(--white); }
+#appendix .section-subtitle { color: rgba(255,255,255,0.5); }
+.appendix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.appendix-card {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+.appendix-card-title {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--brown-400); margin-bottom: 12px;
+}
+.appendix-card p { font-size: 13px; color: rgba(255,255,255,0.55); line-height: 1.75; }
+.appendix-footer {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 12px; color: rgba(255,255,255,0.25);
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  :root { --section-pad: 60px 20px; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .chart-grid-2 { grid-template-columns: 1fr; }
+  .chart-grid-3 { grid-template-columns: 1fr; }
+  .quality-comparison { grid-template-columns: 1fr; }
+  .index-grid { grid-template-columns: 1fr; }
+  .daypart-grid { grid-template-columns: 1fr; }
+  .profile-grid { grid-template-columns: 1fr; }
+  .uplift-grid { grid-template-columns: 1fr; }
+  .appendix-grid { grid-template-columns: 1fr; }
+  .rec-grid { grid-template-columns: 1fr; }
+  /* Switch to accordion recs on mobile */
+  .rec-tabs-wrapper { display: none !important; }
+  .rec-accordion { display: block; }
+  #map { height: 320px; }
+  .nav-brand { font-size: 13px; }
+  .hero-chip { padding: 8px 14px; }
+  .hero-chip-val { font-size: 17px; }
+}
+
+@media (max-width: 600px) {
+  :root { --section-pad: 48px 16px; }
+  .container { padding: 0 16px; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .kpi-card { padding: 18px 16px; }
+  .kpi-val { font-size: 22px; }
+  .chart-card { padding: 16px; }
+  .hero-chips { gap: 8px; }
+  .hero-chip { padding: 8px 12px; }
+  .methodology-box { padding: 20px; }
+  .rec-body { padding: 20px; }
+  .profile-card { padding: 20px; }
+  .profile-num { font-size: 48px; }
+  .aup-row { grid-template-columns: 100px 1fr 52px; }
+  .daypart-row { grid-template-columns: 72px 1fr 38px; }
+}
+
+/* ── UTILITIES ── */
+.mt8 { margin-top: 8px; }
+.mt16 { margin-top: 16px; }
+.mt24 { margin-top: 24px; }
+.mt32 { margin-top: 32px; }
+.mt48 { margin-top: 48px; }
+.divider { height: 1px; background: var(--border); margin: 40px 0; }
+.text-muted { color: var(--text-muted); font-size: 13px; }
+.bold { font-weight: 600; }
+.nowrap { white-space: nowrap; }
+
+/* ── REVENUE LOGIC BRIDGE ── */
+.logic-flow {
+  display: flex; align-items: stretch; gap: 0;
+  background: var(--brown-900);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+.logic-step {
+  flex: 1; padding: 18px 14px; text-align: center;
+  position: relative; display: flex; flex-direction: column; justify-content: center;
+}
+.logic-step:not(:last-child)::after {
+  content: '→';
+  position: absolute; right: -9px; top: 50%; transform: translateY(-50%);
+  color: var(--brown-400); font-size: 15px; z-index: 1;
+}
+.logic-step-num {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--brown-400); margin-bottom: 4px;
+}
+.logic-step-label {
+  font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85);
+  line-height: 1.3;
+}
+.journey-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  margin-bottom: 32px;
+}
+.journey-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.journey-card-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--brown-50);
+}
+.journey-card-store {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--brown-500); margin-bottom: 4px;
+}
+.journey-card-mission {
+  font-family: 'DM Serif Display', serif;
+  font-size: 16px; color: var(--brown-900); line-height: 1.25;
+}
+.journey-steps { padding: 16px 20px; display: flex; flex-direction: column; }
+.journey-row {
+  display: grid; grid-template-columns: 22px 1fr;
+  gap: 10px; align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--brown-50);
+}
+.journey-row:last-child { border-bottom: none; padding-bottom: 4px; }
+.journey-row-icon {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--brown-100);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; flex-shrink: 0; margin-top: 2px; color: var(--brown-600);
+}
+.journey-row-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--brown-400); margin-bottom: 2px;
+}
+.journey-row-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.journey-card-footer {
+  margin: 0 20px 16px;
+  background: var(--brown-900);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.journey-footer-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--brown-400);
+}
+.journey-footer-amount {
+  font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--white);
+}
+.journey-footer-tag { font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; }
+.logic-caveat {
+  background: var(--brown-50);
+  border: 1px solid var(--brown-200);
+  border-radius: var(--radius-sm);
+  padding: 14px 20px;
+  font-size: 13px; color: var(--text-muted); line-height: 1.7; font-style: italic;
+}
+@media (max-width: 900px) {
+  .journey-grid { grid-template-columns: 1fr; }
+  .logic-flow { flex-direction: column; }
+  .logic-step::after { display: none; }
+  .logic-step { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .logic-step:last-child { border-bottom: none; }
+}
+
+
+/* ── MENU EVIDENCE ── */
+.evidence-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+}
+.ev-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.ev-card-header {
+  background: var(--brown-900);
+  padding: 20px 24px 16px;
+}
+.ev-card-store {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--brown-300); margin-bottom: 6px;
+}
+.ev-card-daypart {
+  font-family: 'DM Serif Display', serif;
+  font-size: 17px; color: var(--white); line-height: 1.25; margin-bottom: 8px;
+}
+.ev-card-why {
+  font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.5;
+}
+.ev-card-body { padding: 20px 24px; }
+
+.ev-block { margin-bottom: 18px; }
+.ev-block:last-child { margin-bottom: 0; }
+.ev-block-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--brown-400); margin-bottom: 8px;
+}
+
+.ev-prod-list { display: flex; flex-direction: column; gap: 6px; }
+.ev-prod-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.ev-prod-name { font-size: 13px; color: var(--text-secondary); line-height: 1.3; }
+.ev-prod-rank {
+  font-size: 10px; font-weight: 700; padding: 3px 8px;
+  background: var(--brown-100); color: var(--brown-700);
+  border-radius: 100px; white-space: nowrap; flex-shrink: 0;
+}
+.ev-prod-rank.top { background: var(--brown-700); color: var(--white); }
+
+.ev-attach-list { display: flex; flex-direction: column; gap: 6px; }
+.ev-attach-item {
+  font-size: 13px; color: var(--text-secondary);
+  padding: 8px 10px;
+  background: var(--brown-50);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--brown-300);
+  line-height: 1.4;
+}
+.ev-attach-stat {
+  font-size: 11px; font-weight: 600; color: var(--brown-600);
+  display: block; margin-top: 2px;
+}
+
+.ev-co-box {
+  background: var(--brown-50);
+  border: 1px solid var(--brown-200);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 12px; color: var(--text-secondary); line-height: 1.6;
+}
+.ev-co-box strong { color: var(--brown-700); }
+
+.ev-conclusion {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13px; color: var(--brown-800);
+  line-height: 1.65; font-style: italic;
+}
+
+.ev-reliability {
+  font-size: 12px; color: var(--text-muted); line-height: 1.6;
+}
+.ev-reliability strong { color: var(--brown-600); font-style: normal; }
+
+@media (max-width: 900px) {
+  .evidence-grid { grid-template-columns: 1fr; }
+}
+
+/* ── MOBILE CHART ALTERNATIVES ── */
+.mobile-stat-cards { display: none; }
+.mobile-store-bars { display: none; }
+
+@media (max-width: 600px) {
+  /* Hide line charts and horizontal bar charts on small screens */
+  .hide-mobile { display: none !important; }
+  /* Show mobile alternatives */
+  .mobile-stat-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .mobile-store-bars { display: block; margin-top: 4px; }
+  /* Reduce chart card padding when chart is still shown */
+  .chart-card { padding: 14px; }
+  /* Hourly chart: make it scrollable horizontally so labels don't collapse */
+  .hourly-scroll-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .hourly-scroll-wrap .chart-container { min-width: 520px; }
+}
+
+/* Mobile stat card — simple number+label pill */
+.mob-stat {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 12px;
+  text-align: center;
+}
+.mob-stat-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px; color: var(--brown-800);
+  margin-bottom: 2px;
+}
+.mob-stat-label { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
+
+/* Mobile store comparison rows (replace horizontal bar charts) */
+.mob-store-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--brown-50);
+  gap: 12px;
+}
+.mob-store-row:last-child { border-bottom: none; }
+.mob-store-name { font-size: 13px; font-weight: 600; color: var(--text-secondary); min-width: 120px; }
+.mob-store-bar-wrap { flex: 1; background: var(--brown-100); border-radius: 100px; height: 8px; overflow: hidden; }
+.mob-store-bar { height: 100%; border-radius: 100px; }
+.mob-store-val { font-size: 13px; font-weight: 600; color: var(--brown-700); min-width: 56px; text-align: right; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--brown-200); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-inner">
+    <div class="nav-brand">Maven Roasters NYC</div>
+    <div class="nav-links">
+      <a href="#executive">Overview</a>
+      <a href="#revenue-quality">Revenue Quality</a>
+      <a href="#category">Category Mix</a>
+      <a href="#rhythm">Demand Rhythm</a>
+      <a href="#profiles">Store Profiles</a>
+      <a href="#map-section">Map</a>
+      <a href="#menu-evidence">Menu Evidence</a>
+      <a href="#recommendations">Recommendations</a>
+      <a href="#revenue-logic">Revenue Logic</a>
+      <a href="#uplift">Uplift</a>
+      <a href="#appendix">Appendix</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-pattern"></div>
+  <div class="hero-content">
+    <div class="hero-label">Coffee Shop Sales Performance Review</div>
+    <h1 class="hero-title">Three Stores.<br>One City.<br><em style="color:var(--brown-300)">Different Stories.</em></h1>
+    <p class="hero-subtitle">How product mix and store rhythm shaped revenue quality across three New York locations — and what each store should do differently.</p>
+    <div class="hero-chips">
+      <div class="hero-chip">
+        <span class="hero-chip-val">$698,812</span>
+        <span class="hero-chip-label">Total Revenue</span>
+      </div>
+      <div class="hero-chip">
+        <span class="hero-chip-val">214,470</span>
+        <span class="hero-chip-label">Items Sold</span>
+      </div>
+      <div class="hero-chip">
+        <span class="hero-chip-val">3</span>
+        <span class="hero-chip-label">NYC Stores</span>
+      </div>
+      <div class="hero-chip">
+        <span class="hero-chip-val">6 mo.</span>
+        <span class="hero-chip-label">Jan–Jun 2023</span>
+      </div>
+    </div>
+    <div class="hero-byline">Prepared by Rahmananda Ridho Gamawan &nbsp;·&nbsp; Portfolio Analysis, 2024</div>
+  </div>
+</section>
+
+<!-- DISCLAIMER -->
+<section id="disclaimer">
+  <div class="disclaimer-box">
+    <div class="disclaimer-icon">ℹ</div>
+    <div>
+      <div class="disclaimer-title">About This Analysis</div>
+      <p class="disclaimer-body">
+        This report is a portfolio demonstration piece prepared by <strong>Rahmananda Ridho Gamawan</strong>. It is based on the "Coffee Sales" dataset published on Kaggle by Ahmed Abbas, representing transaction records for <strong>Maven Roasters</strong> — a fictitious coffee shop chain operating across three New York City locations. The business, brand, customer profiles, and operating context described here are entirely fictional. All findings, recommendations, and uplift estimates are derived from the sample data and stated analytical assumptions. <strong>Uplift figures are modeled projections, not measured outcomes.</strong> They should not be interpreted as actual business performance, validated operational guidance, or investment advice.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- EXECUTIVE SNAPSHOT -->
+<section id="executive">
+  <div class="container">
+    <div class="section-label">Executive Snapshot</div>
+    <h2 class="section-title">The Business Is Growing.<br>But Growth Hides Differences.</h2>
+    <p class="section-subtitle">Revenue climbed strongly through the first half of 2023 — driven entirely by volume, not price. On the surface, all three stores look equal. They are not.</p>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-val">$698,812</div>
+        <div class="kpi-label">Estimated Gross Sales</div>
+        <div class="kpi-note">Jan – Jun 2023</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-val">214,470</div>
+        <div class="kpi-label">Total Items Sold</div>
+        <div class="kpi-note">Across all 3 stores</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-val">~$3.26</div>
+        <div class="kpi-label">Avg Unit Price</div>
+        <div class="kpi-note">Stable through the period</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-val">+112%</div>
+        <div class="kpi-label">Volume Growth</div>
+        <div class="kpi-note">Jan to Jun, daily units</div>
+      </div>
+    </div>
+
+    <div class="chart-grid-2 hide-mobile">
+      <div class="chart-card">
+        <div class="chart-card-title">Monthly Sales Trend</div>
+        <div class="chart-card-note">Revenue climbed steadily — no single spike, sustained acceleration</div>
+        <div class="chart-container">
+          <canvas id="chartMonthlyRevenue"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Volume vs. Price — Growth Is Volume-Led</div>
+        <div class="chart-card-note">Daily units grew 112%; avg unit price held flat around $3.25</div>
+        <div class="chart-container">
+          <canvas id="chartVolumeLed"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile alternative: stat cards instead of line charts -->
+    <div class="mobile-stat-cards">
+      <div class="mob-stat">
+        <div class="mob-stat-val">$77k</div>
+        <div class="mob-stat-label">Jan revenue</div>
+      </div>
+      <div class="mob-stat">
+        <div class="mob-stat-val">$167k</div>
+        <div class="mob-stat-label">Jun revenue</div>
+      </div>
+      <div class="mob-stat">
+        <div class="mob-stat-val">+112%</div>
+        <div class="mob-stat-label">Volume growth Jan→Jun</div>
+      </div>
+      <div class="mob-stat">
+        <div class="mob-stat-val">~$3.26</div>
+        <div class="mob-stat-label">Avg unit price, stable</div>
+      </div>
+    </div>
+
+    <div class="insight-box mt24">
+      <strong>Key takeaway:</strong> This business grew because more customers came through the door, not because prices increased. That means revenue quality per visit matters — and product mix is the lever. The same number of customers can generate meaningfully different revenue depending on what they buy.
+    </div>
+  </div>
+</section>
+
+<!-- REVENUE QUALITY GAP -->
+<section id="revenue-quality">
+  <div class="container">
+    <div class="section-label">Revenue Quality Gap</div>
+    <h2 class="section-title">Equal Volume.<br>Unequal Value.</h2>
+    <p class="section-subtitle">Hell's Kitchen and Lower Manhattan sold virtually identical item volumes. Hell's Kitchen earned $6,453 more. The difference is product mix — and average value per item.</p>
+
+    <div class="quality-comparison hide-mobile">
+      <div class="chart-card">
+        <div class="chart-card-title">Revenue by Store</div>
+        <div class="chart-card-note">Hell's Kitchen leads despite near-identical volume</div>
+        <div class="chart-container">
+          <canvas id="chartStoreRevenue"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Items Sold by Store</div>
+        <div class="chart-card-note">Volume gap is only ~751 items across three stores</div>
+        <div class="chart-container">
+          <canvas id="chartStoreVolume"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile alternative: simple comparison rows -->
+    <div class="mobile-store-bars">
+      <div class="chart-card">
+        <div class="chart-card-title">Revenue by Store</div>
+        <div class="chart-card-note">Hell's Kitchen leads despite near-identical volume</div>
+        <div style="margin-top:14px;">
+          <div class="mob-store-row">
+            <div class="mob-store-name">Hell's Kitchen</div>
+            <div class="mob-store-bar-wrap"><div class="mob-store-bar" style="width:100%; background:var(--brown-700);"></div></div>
+            <div class="mob-store-val">$236,511</div>
+          </div>
+          <div class="mob-store-row">
+            <div class="mob-store-name">Astoria</div>
+            <div class="mob-store-bar-wrap"><div class="mob-store-bar" style="width:98.2%; background:var(--brown-500);"></div></div>
+            <div class="mob-store-val">$232,244</div>
+          </div>
+          <div class="mob-store-row">
+            <div class="mob-store-name">Lower Manhattan</div>
+            <div class="mob-store-bar-wrap"><div class="mob-store-bar" style="width:97.3%; background:var(--brown-400);"></div></div>
+            <div class="mob-store-val">$230,057</div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-card mt16">
+        <div class="chart-card-title">Items Sold by Store</div>
+        <div class="chart-card-note">Volume gap is only ~751 items — nearly identical across all three</div>
+        <div style="margin-top:14px;">
+          <div class="mob-store-row">
+            <div class="mob-store-name">Lower Manhattan</div>
+            <div class="mob-store-bar-wrap"><div class="mob-store-bar" style="width:100%; background:var(--brown-700);"></div></div>
+            <div class="mob-store-val">71,742</div>
+          </div>
+          <div class="mob-store-row">
+            <div class="mob-store-name">Hell's Kitchen</div>
+            <div class="mob-store-bar-wrap"><div class="mob-store-bar" style="width:99.9%; background:var(--brown-500);"></div></div>
+            <div class="mob-store-val">71,737</div>
+          </div>
+          <div class="mob-store-row">
+            <div class="mob-store-name">Astoria</div>
+            <div class="mob-store-bar-wrap"><div class="mob-store-bar" style="width:98.9%; background:var(--brown-400);"></div></div>
+            <div class="mob-store-val">70,991</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-title">Average Unit Price by Store</div>
+      <div class="chart-card-note">The revenue quality mechanism — Hell's Kitchen's product mix skews higher in value</div>
+      <div class="aup-bars mt16">
+        <div class="aup-row">
+          <div class="aup-label">Hell's Kitchen</div>
+          <div class="aup-bar-bg"><div class="aup-bar-fill" style="width:100%; background:var(--brown-700);"></div></div>
+          <div class="aup-val">$3.30</div>
+        </div>
+        <div class="aup-row">
+          <div class="aup-label">Astoria</div>
+          <div class="aup-bar-bg"><div class="aup-bar-fill" style="width:92%; background:var(--brown-500);"></div></div>
+          <div class="aup-val">$3.27</div>
+        </div>
+        <div class="aup-row">
+          <div class="aup-label">Lower Manhattan</div>
+          <div class="aup-bar-bg"><div class="aup-bar-fill" style="width:88%; background:var(--brown-400);"></div></div>
+          <div class="aup-val">$3.21</div>
+        </div>
+      </div>
+      <div class="insight-box mt24">
+        <strong>The mechanism:</strong> Hell's Kitchen over-indexes on Coffee Beans — the highest-value category in the portfolio ($18,635 vs $10,219 at Astoria and $11,231 at Lower Manhattan). This elevates its per-item average without needing more customers. The opportunity for the other two stores is clear: shift the product mix, not the footfall targets.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CATEGORY MIX -->
+<section id="category">
+  <div class="container">
+    <div class="section-label">Category Mix by Store</div>
+    <h2 class="section-title">The Core Is Shared.<br>The Margins Are Not.</h2>
+    <p class="section-subtitle">Every store earns roughly 39% of revenue from Coffee and 29–31% from Tea. The meaningful differences emerge in the secondary categories — where the real mix opportunity lives.</p>
+
+    <div class="category-tabs">
+      <button class="tab-btn active" onclick="showCatChart('all', this)">All Stores</button>
+      <button class="tab-btn" onclick="showCatChart('astoria', this)">Astoria</button>
+      <button class="tab-btn" onclick="showCatChart('hellskitchen', this)">Hell's Kitchen</button>
+      <button class="tab-btn" onclick="showCatChart('lowermanhattan', this)">Lower Manhattan</button>
+    </div>
+
+    <div class="chart-card hide-mobile">
+      <div class="chart-card-title" id="catChartTitle">Category Revenue Share — All Stores (Normalized)</div>
+      <div class="chart-card-note">Each bar represents 100% of that store's revenue, broken down by category</div>
+      <div class="chart-container tall">
+        <canvas id="chartCategoryMix"></canvas>
+      </div>
+    </div>
+    <!-- Mobile note replacing the category chart (index cards below already serve this) -->
+    <div class="mobile-stat-cards" style="grid-template-columns:1fr; gap:8px;">
+      <div class="mob-stat" style="text-align:left; padding:14px 16px;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--brown-500); margin-bottom:6px;">All stores</div>
+        <div style="font-size:13px; color:var(--text-secondary); line-height:1.6;">Coffee accounts for ~39% and Tea ~29–31% at every store. The differences that matter are in the secondary categories — shown in the cards below.</div>
+      </div>
+    </div>
+
+    <div class="index-grid mt32">
+      <div class="index-card">
+        <div class="index-store">Astoria</div>
+        <div class="index-item"><span class="index-cat">Drinking Chocolate</span><span class="index-badge index-over">Higher than average</span></div>
+        <div class="index-item"><span class="index-cat">Tea</span><span class="index-badge index-over">Higher than average</span></div>
+        <div class="index-item"><span class="index-cat">Coffee Beans</span><span class="index-badge index-under">Lower than average</span></div>
+        <div class="index-item"><span class="index-cat">Coffee</span><span class="index-badge index-neutral">About average</span></div>
+      </div>
+      <div class="index-card">
+        <div class="index-store">Hell's Kitchen</div>
+        <div class="index-item"><span class="index-cat">Coffee Beans</span><span class="index-badge index-over">Biggest strength</span></div>
+        <div class="index-item"><span class="index-cat">Coffee</span><span class="index-badge index-neutral">About average</span></div>
+        <div class="index-item"><span class="index-cat">Drinking Chocolate</span><span class="index-badge index-under">Lower than average</span></div>
+        <div class="index-item"><span class="index-cat">Tea</span><span class="index-badge index-under">Lower than average</span></div>
+      </div>
+      <div class="index-card">
+        <div class="index-store">Lower Manhattan</div>
+        <div class="index-item"><span class="index-cat">Bakery</span><span class="index-badge index-over">Biggest strength</span></div>
+        <div class="index-item"><span class="index-cat">Coffee</span><span class="index-badge index-over">Higher than average</span></div>
+        <div class="index-item"><span class="index-cat">Coffee Beans</span><span class="index-badge index-under">Under-index</span></div>
+        <div class="index-item"><span class="index-cat">Tea</span><span class="index-badge index-under">Under-index</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMAND RHYTHM -->
+<section id="rhythm">
+  <div class="container">
+    <div class="section-label">Demand Rhythm</div>
+    <h2 class="section-title">Each Store Has a<br>Different Clock.</h2>
+    <p class="section-subtitle">The hour-by-hour sales pattern reveals distinct customer missions across the three locations — and identifies where each store has room to grow.</p>
+
+    <div class="daypart-grid">
+      <div class="daypart-card">
+        <div class="daypart-store">Astoria</div>
+        <div class="daypart-bars">
+          <div class="daypart-row">
+            <div class="dp-label">Morning Rush</div>
+            <div class="dp-bar-bg"><div class="dp-bar-fill dp-morning" style="width:38.51%"></div></div>
+            <div class="dp-pct">38.5%</div>
+          </div>
+          <div class="daypart-row">
+            <div class="dp-label">Midday</div>
+            <div class="dp-bar-bg"><div class="dp-bar-fill dp-midday" style="width:33.57%"></div></div>
+            <div class="dp-pct">33.6%</div>
+          </div>
+          <div class="daypart-row">
+            <div class="dp-label">Late Day</div>
+            <div class="dp-bar-bg"><div class="dp-bar-fill dp-late" style="width:27.92%"></div></div>
+            <div class="dp-pct">27.9%</div>
+          </div>
+        </div>
+        <div class="insight-box mt16" style="font-size:13px;">Most balanced day in the network. Neighborhood regulars spread their visits throughout the day.</div>
+      </div>
+      <div class="daypart-card">
+        <div class="daypart-store">Hell's Kitchen</div>
+        <div class="daypart-bars">
+          <div class="daypart-row">
+            <div class="dp-label">Morning Rush</div>
+            <div class="dp-bar-bg"><div class="dp-bar-fill dp-morning" style="width:50.36%"></div></div>
+            <div class="dp-pct">50.4%</div>
+          </div>
+          <div class="daypart-row">
+            <div class="dp-label">Midday</div>
+            <div class="dp-bar-bg"><div class="dp-bar-fill dp-midday" style="width:28.69%"></div></div>
+            <div class="dp-pct">28.7%</div>
+          </div>
+          <div class="daypart-row">
+            <div class="dp-label">Late Day</div>
+            <div class="dp-bar-bg"><div class="dp-bar-fill dp-late" style="width:20.95%"></div></div>
+            <div class="dp-pct">21.0%</div>
+          </div>
+        </div>
+        <div class="insight-box mt16" style="font-size:13px;">Strong morning anchor with a meaningful late-day tail. The most mixed-demand store in the network.</div>
+      </div>
+      <div class="daypart-card">
+        <div class="daypart-store">Lower Manhattan</div>
+        <div class="daypart-bars">
+          <div class="daypart-row">
+            <div class="dp-label">Morning Rush</div>
+            <div class="dp-bar-bg"><div class="dp-bar-fill dp-morning" style="width:54.15%"></div></div>
+            <div class="dp-pct">54.2%</div>
+          </div>
+          <div class="daypart-row">
+            <div class="dp-label">Midday</div>
+            <div class="dp-bar-bg"><div class="dp-bar-fill dp-midday" style="width:31.11%"></div></div>
+            <div class="dp-pct">31.1%</div>
+          </div>
+          <div class="daypart-row">
+            <div class="dp-label">Late Day</div>
+            <div class="dp-bar-bg"><div class="dp-bar-fill dp-late" style="width:14.73%"></div></div>
+            <div class="dp-pct">14.7%</div>
+          </div>
+        </div>
+        <div class="insight-box mt16" style="font-size:13px;">The most time-sensitive store. Demand concentrates sharply in the morning and fades quickly after lunch.</div>
+      </div>
+    </div>
+
+    <div class="chart-card mt24">
+      <div class="chart-card-title">Hourly Revenue Profile by Store</div>
+      <div class="chart-card-note">Revenue by hour of day across all 6 months — showing how each store's day unfolds differently</div>
+      <div class="hourly-scroll-wrap">
+        <div class="chart-container tall">
+          <canvas id="chartHourly"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STORE PROFILES -->
+<section id="profiles">
+  <div class="container">
+    <div class="section-label">Store Profiles</div>
+    <h2 class="section-title">Know Who Walks<br>Through the Door.</h2>
+    <p class="section-subtitle">The demand rhythm data points to clear behavioral differences across locations. Each store serves a distinct customer with a distinct mission — and that mission should drive a distinct product strategy.</p>
+
+    <div class="profile-grid">
+      <div class="profile-card">
+        <div class="profile-num">01</div>
+        <div class="profile-store-name">Lower Manhattan</div>
+        <div class="profile-mission">The<br><em>Commuter Store</em></div>
+        <div class="profile-tags">
+          <span class="profile-tag">Morning-Heavy</span>
+          <span class="profile-tag">Time-Pressed</span>
+          <span class="profile-tag">Functional</span>
+        </div>
+        <div class="profile-dominant">Office workers, transit commuters, and financial district regulars. They know what they want, move fast, and repeat. The morning window (54%) is the entire game — every other daypart is secondary.</div>
+      </div>
+      <div class="profile-card">
+        <div class="profile-num">02</div>
+        <div class="profile-store-name">Hell's Kitchen</div>
+        <div class="profile-mission">The<br><em>Mixed Occasion Store</em></div>
+        <div class="profile-tags">
+          <span class="profile-tag">Dual Daypart</span>
+          <span class="profile-tag">Exploratory</span>
+          <span class="profile-tag">Mixed Visitor</span>
+        </div>
+        <div class="profile-dominant">Strong morning commuter base layered with afternoon/evening leisure visitors. The most diverse customer type in the network. The late-day tail (21%) is underdeveloped relative to the morning anchor — and represents the biggest growth opportunity.</div>
+      </div>
+      <div class="profile-card">
+        <div class="profile-num">03</div>
+        <div class="profile-store-name">Astoria</div>
+        <div class="profile-mission">The<br><em>Neighborhood Store</em></div>
+        <div class="profile-tags">
+          <span class="profile-tag">All-Day Balanced</span>
+          <span class="profile-tag">Local Regulars</span>
+          <span class="profile-tag">Relaxed Dwell</span>
+        </div>
+        <div class="profile-dominant">Neighborhood residents and local workers with longer dwell times and higher exploration tolerance. The most balanced day pattern in the network. The late-day window (28%) is already the strongest in the chain — it can be developed further without disrupting the all-day balance.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MAP -->
+<section id="map-section">
+  <div class="container">
+    <div class="section-label">NYC Store Map</div>
+    <h2 class="section-title">Three Neighborhoods.<br>Three Distinct Contexts.</h2>
+    <p class="section-subtitle">Location shapes customer type. Each store operates in a meaningfully different neighborhood environment — which explains the behavioral differences we see in the data. <span class="text-muted">(Click a marker to see the store's action plan.)</span></p>
+    <div id="map"></div>
+  </div>
+</section>
+
+<!-- MENU EVIDENCE -->
+<section id="menu-evidence">
+  <div class="container">
+    <div class="section-label">Menu Evidence</div>
+    <h2 class="section-title">Why These<br>Products.</h2>
+    <p class="section-subtitle">The push products and bundles in each recommendation are not arbitrary. They were selected because the transaction data shows they dominate their target time window, appear reliably, and have a timing profile that matches the store's customer mission.</p>
+
+    <div class="evidence-grid">
+
+      <!-- ── LOWER MANHATTAN ── -->
+      <div class="ev-card">
+        <div class="ev-card-header">
+          <div class="ev-card-store">Lower Manhattan</div>
+          <div class="ev-card-daypart">Target: Morning Rush<br>6–10 AM</div>
+          <div class="ev-card-why">54% of daily revenue lands before 11 AM — the most morning-concentrated store in the network. The case for a morning-focused product strategy is in the data, not just the intuition.</div>
+        </div>
+        <div class="ev-card-body">
+
+          <div class="ev-block">
+            <div class="ev-block-label">Push Products — ranked by morning revenue</div>
+            <div class="ev-prod-list">
+              <div class="ev-prod-row">
+                <div class="ev-prod-name">Sustainably Grown Organic Lg</div>
+                <div class="ev-prod-rank top">#1 in morning</div>
+              </div>
+              <div class="ev-prod-row">
+                <div class="ev-prod-name">Dark Chocolate Lg</div>
+                <div class="ev-prod-rank top">#2 in morning</div>
+              </div>
+              <div class="ev-prod-row">
+                <div class="ev-prod-name">Latte Rg</div>
+                <div class="ev-prod-rank">#3 in morning</div>
+              </div>
+              <div class="ev-prod-row">
+                <div class="ev-prod-name">Cappuccino Lg</div>
+                <div class="ev-prod-rank">#4 in morning</div>
+              </div>
+            </div>
+            <div class="ev-reliability mt8">All four were active on <strong>98–99% of operating days</strong> with consistent daily quantities — not seasonal or spiky performers.</div>
+          </div>
+
+          <div class="ev-block">
+            <div class="ev-block-label">Attach / Bundle — timing match</div>
+            <div class="ev-attach-list">
+              <div class="ev-attach-item">
+                Chocolate Croissant
+                <span class="ev-attach-stat">70% of its total LM sales happen before 11 AM · #1 bakery in morning revenue · active 94% of morning days</span>
+              </div>
+              <div class="ev-attach-item">
+                Ginger Scone
+                <span class="ev-attach-stat">57% of its total LM sales happen before 11 AM · #2 bakery in morning revenue · active 88% of morning days</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ev-block">
+            <div class="ev-block-label">Co-occurrence signal</div>
+            <div class="ev-co-box">Coffee and Bakery appear together in <strong>nearly 9 out of 10 morning hour-blocks</strong> at Lower Manhattan. The combination already co-exists in the store's demand pattern — the recommendation is about making it deliberate, not introducing something new.</div>
+          </div>
+
+          <div class="ev-conclusion">
+            These four drinks are the actual top revenue performers in the morning window. The two bakery items are the most morning-aligned in the store. The strategy matches what the data already shows customers doing — and asks for a small, structured lift on top of existing behavior.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── HELL'S KITCHEN ── -->
+      <div class="ev-card">
+        <div class="ev-card-header">
+          <div class="ev-card-store">Hell's Kitchen</div>
+          <div class="ev-card-daypart">Target: Late Day<br>3–8 PM</div>
+          <div class="ev-card-why">Only 21% of daily revenue arrives after 2 PM — the most underdeveloped late-day window in the network. The morning is already strong. The late-day is where growth must be built.</div>
+        </div>
+        <div class="ev-card-body">
+
+          <div class="ev-block">
+            <div class="ev-block-label">Push Products — ranked by late-day revenue</div>
+            <div class="ev-prod-list">
+              <div class="ev-prod-row">
+                <div class="ev-prod-name">Sustainably Grown Organic Lg</div>
+                <div class="ev-prod-rank top">#1 in late day</div>
+              </div>
+              <div class="ev-prod-row">
+                <div class="ev-prod-name">Dark Chocolate Lg</div>
+                <div class="ev-prod-rank top">#2 in late day</div>
+              </div>
+              <div class="ev-prod-row">
+                <div class="ev-prod-name">Morning Sunrise Chai Lg</div>
+                <div class="ev-prod-rank">#3 in late day</div>
+              </div>
+              <div class="ev-prod-row">
+                <div class="ev-prod-name">Jamaican Coffee River Lg</div>
+                <div class="ev-prod-rank">36% late-day share</div>
+              </div>
+            </div>
+            <div class="ev-reliability mt8">The first three are all <strong>98–99% days active</strong> network-wide. Jamaican Coffee River is included for its late-day orientation and differentiation — suited to the exploratory, leisure customer this window attracts.</div>
+          </div>
+
+          <div class="ev-block">
+            <div class="ev-block-label">Attach / Bundle — timing match</div>
+            <div class="ev-attach-list">
+              <div class="ev-attach-item">
+                Scottish Cream Scone
+                <span class="ev-attach-stat">#1 bakery item in HK late-day by revenue · active on 62% of late-day periods · 28.6% of its total HK sales come from late day</span>
+              </div>
+              <div class="ev-attach-item">
+                Cranberry Scone
+                <span class="ev-attach-stat">#2 bakery in HK late-day · highest late-day revenue share of the scones at 33% · active 60% of late-day periods</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ev-block">
+            <div class="ev-block-label">Co-occurrence signal</div>
+            <div class="ev-co-box">Coffee and Bakery appear together in <strong>over 8 out of 10 late-day hour-blocks</strong> at Hell's Kitchen. The categories already co-exist — the attach recommendation is about making it visible and prompted, not creating a new behavior from scratch.</div>
+          </div>
+
+          <div class="ev-conclusion">
+            The top three drinks are the genuine late-day leaders at HK. The Jamaican Coffee River is included as the most differentiated specialty item with a meaningful late-day presence — it fits the exploratory customer that the afternoon attracts. Both scones are the bakery items with the most afternoon-oriented demand profile at this store.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ASTORIA ── -->
+      <div class="ev-card">
+        <div class="ev-card-header">
+          <div class="ev-card-store">Astoria</div>
+          <div class="ev-card-daypart">Target: Late Day<br>2–7 PM</div>
+          <div class="ev-card-why">28% of daily revenue arrives after 2 PM — the strongest late-day share in the network. The occasion already exists. The products below were selected because they are most active, most demanded, and most aligned with that window.</div>
+        </div>
+        <div class="ev-card-body">
+
+          <div class="ev-block">
+            <div class="ev-block-label">Push Products — ranked by late-day revenue</div>
+            <div class="ev-prod-list">
+              <div class="ev-prod-row">
+                <div class="ev-prod-name">Sustainably Grown Organic Lg</div>
+                <div class="ev-prod-rank top">#1 in late day · 45% LD share</div>
+              </div>
+              <div class="ev-prod-row">
+                <div class="ev-prod-name">Dark Chocolate Lg</div>
+                <div class="ev-prod-rank top">#2 in late day · 40% LD share</div>
+              </div>
+              <div class="ev-prod-row">
+                <div class="ev-prod-name">Morning Sunrise Chai Lg</div>
+                <div class="ev-prod-rank">#3 in late day · 44% LD share</div>
+              </div>
+              <div class="ev-prod-row">
+                <div class="ev-prod-name">Dark Chocolate Rg</div>
+                <div class="ev-prod-rank">49% LD share · peaks at 17:00</div>
+              </div>
+            </div>
+            <div class="ev-reliability mt8">All four active on <strong>98–99% of operating days</strong>. Dark Chocolate Rg and Morning Sunrise Chai Lg both generate nearly half their total Astoria revenue after 2 PM — the clearest late-day orientation of any drinks in the network.</div>
+          </div>
+
+          <div class="ev-block">
+            <div class="ev-block-label">Attach / Bundle — timing match</div>
+            <div class="ev-attach-list">
+              <div class="ev-attach-item">
+                Scottish Cream Scone
+                <span class="ev-attach-stat">#1 bakery in Astoria late-day · 50% of its total Astoria revenue comes from late day · peak sales at 16:00 · the most afternoon-oriented bakery item in the entire network</span>
+              </div>
+              <div class="ev-attach-item">
+                Chocolate Croissant
+                <span class="ev-attach-stat">#2 bakery in Astoria late-day · active 77% of late-day periods — the most consistently available bakery item in the afternoon window</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ev-block">
+            <div class="ev-block-label">Co-occurrence signal</div>
+            <div class="ev-co-box">Coffee and Bakery appear together in <strong>nearly 9 out of 10 hour-blocks</strong> at Astoria — the strongest co-occurrence rate in the network. The longer dwell time and neighborhood regular profile make attach more achievable here than at any other store.</div>
+          </div>
+
+          <div class="ev-conclusion">
+            Every product in the Astoria late-day recommendation is data-selected: ranked by actual late-day revenue, with late-day revenue share confirmed above 40% for the top drinks, and attach items chosen because they peak in the afternoon — not the morning. The Scottish Cream Scone at Astoria is the single most afternoon-aligned bakery item in the dataset.
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end evidence-grid -->
+  </div>
+</section>
+
+<!-- RECOMMENDATIONS -->
+<section id="recommendations">
+  <div class="container">
+    <div class="section-label">Store-Specific Recommendations</div>
+    <h2 class="section-title">The Right Product<br>at the Right Time.</h2>
+    <p class="section-subtitle">Each store has a different opportunity window. The strategy below is tailored to each store's customer mission and demand rhythm — not a uniform network playbook.</p>
+
+    <!-- Desktop tabs -->
+    <div class="rec-tabs-wrapper">
+      <div class="rec-tabs">
+        <button class="tab-btn active" onclick="showRec('lm')">Lower Manhattan</button>
+        <button class="tab-btn" onclick="showRec('hk')">Hell's Kitchen</button>
+        <button class="tab-btn" onclick="showRec('ast')">Astoria</button>
+      </div>
+
+      <div id="rec-lm" class="rec-panel active">
+        <div class="rec-header">
+          <div class="rec-store-name">Lower Manhattan</div>
+          <div class="rec-headline">Protect and Monetize the Morning Rush</div>
+          <div class="rec-tagline">"The window is 6–10 AM. That's the entire game."</div>
+        </div>
+        <div class="rec-body">
+          <div class="rec-target-time">⏰ Target Daypart: Morning Rush (6–10 AM · 54% of daily revenue)</div>
+          <div class="rec-grid">
+            <div>
+              <div class="rec-col-title">Push Products</div>
+              <ul class="rec-items">
+                <li>Sustainably Grown Organic Lg</li>
+                <li>Latte Rg</li>
+                <li>Dark Chocolate Lg</li>
+                <li>Cappuccino Lg</li>
+              </ul>
+            </div>
+            <div>
+              <div class="rec-col-title">Attach / Bundle</div>
+              <ul class="rec-items">
+                <li>Chocolate Croissant</li>
+                <li>Ginger Scone</li>
+              </ul>
+              <div class="text-muted mt16" style="font-size:13px;">Grab-and-go items only. Pre-bag and place at eye level by 6 AM.</div>
+            </div>
+            <div>
+              <div class="rec-col-title">How to Execute</div>
+              <ul class="rec-items">
+                <li>Put a small sign at the counter showing the coffee + croissant pairing and its price</li>
+                <li>Train staff to ask one question when handing over the drink: "Would you like a scone with that?"</li>
+                <li>Make sure all bakery items are fully stocked and visible on the counter by 6:00 AM</li>
+                <li>Check bakery stock and sales numbers at the end of the first 90 minutes every morning</li>
+              </ul>
+            </div>
+          </div>
+          <div class="rec-insight">
+            <strong>KPIs to track:</strong> Bakery attach rate during 6–10 AM (target: +3pp from baseline) · Avg transaction value morning window (target: +$0.50/transaction) · Morning rush revenue as % of daily (protect at 54%+)
+          </div>
+        </div>
+      </div>
+
+      <div id="rec-hk" class="rec-panel">
+        <div class="rec-header">
+          <div class="rec-store-name">Hell's Kitchen</div>
+          <div class="rec-headline">Build a Stronger Late Day on a Strong Morning Base</div>
+          <div class="rec-tagline">"The morning is locked in. The afternoon is where the growth is."</div>
+        </div>
+        <div class="rec-body">
+          <div class="rec-target-time">⏰ Target Daypart: Late Day (3–8 PM · 21% of daily revenue — most underdeveloped in network)</div>
+          <div class="rec-grid">
+            <div>
+              <div class="rec-col-title">Push Products</div>
+              <ul class="rec-items">
+                <li>Sustainably Grown Organic Lg</li>
+                <li>Morning Sunrise Chai Lg</li>
+                <li>Dark Chocolate Lg</li>
+                <li>Jamaican Coffee River Lg</li>
+              </ul>
+            </div>
+            <div>
+              <div class="rec-col-title">Attach / Bundle</div>
+              <ul class="rec-items">
+                <li>Scottish Cream Scone</li>
+                <li>Cranberry Scone</li>
+              </ul>
+              <div class="text-muted mt16" style="font-size:13px;">Slightly more premium positioning — suited to HK's mixed, exploratory customer.</div>
+            </div>
+            <div>
+              <div class="rec-col-title">How to Execute</div>
+              <ul class="rec-items">
+                <li>Write one featured afternoon drink + scone combo on the chalkboard each day</li>
+                <li>Ask staff to describe the Jamaican Coffee River in one sentence — e.g. "It's smooth and earthy, very different from the regular."</li>
+                <li>Place coffee beans near the register and ask afternoon customers: "Want a bag to brew at home?"</li>
+                <li>Change the afternoon featured drink once a week to give regulars something new to try</li>
+              </ul>
+            </div>
+          </div>
+          <div class="rec-insight">
+            <strong>KPIs to track:</strong> Late Day revenue as % of daily (target: grow from 21% to 24%+) · Specialty coffee (Jamaican Coffee River) units sold per afternoon · Coffee Bean sales during late day
+          </div>
+        </div>
+      </div>
+
+      <div id="rec-ast" class="rec-panel">
+        <div class="rec-header">
+          <div class="rec-store-name">Astoria</div>
+          <div class="rec-headline">Build the Late Day Without Breaking All-Day Balance</div>
+          <div class="rec-tagline">"The afternoon is the treat-yourself moment. Design for it."</div>
+        </div>
+        <div class="rec-body">
+          <div class="rec-target-time">⏰ Target Daypart: Late Day (2–7 PM · 28% of daily revenue — best late-day profile in network)</div>
+          <div class="rec-grid">
+            <div>
+              <div class="rec-col-title">Push Products</div>
+              <ul class="rec-items">
+                <li>Sustainably Grown Organic Lg</li>
+                <li>Dark Chocolate Lg</li>
+                <li>Morning Sunrise Chai Lg</li>
+                <li>Dark Chocolate Rg</li>
+              </ul>
+            </div>
+            <div>
+              <div class="rec-col-title">Attach / Bundle</div>
+              <ul class="rec-items">
+                <li>Scottish Cream Scone</li>
+                <li>Chocolate Croissant</li>
+              </ul>
+              <div class="text-muted mt16" style="font-size:13px;">Warm items where possible. The pitch is enjoyment, not speed.</div>
+            </div>
+            <div>
+              <div class="rec-col-title">How to Execute</div>
+              <ul class="rec-items">
+                <li>Put a small sign near the cashier showing a drink + bakery afternoon combo and its price</li>
+                <li>If there's an A-frame outside, feature the afternoon pairing there too</li>
+                <li>Change the featured afternoon combo once a week — regulars notice and it gives them a reason to try something new</li>
+                <li>If the store has a loyalty stamp card, start using it here — afternoon regulars are the best fit for a repeat-visit program</li>
+              </ul>
+            </div>
+          </div>
+          <div class="rec-insight">
+            <strong>KPIs to track:</strong> Late Day revenue as % of daily (target: grow from 27.9% to 30%+) · Chai + bakery attach rate in afternoon · Weekend afternoon revenue (Astoria likely has stronger weekend than LM)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile accordion -->
+    <div class="rec-accordion">
+      <div class="acc-item" id="acc-lm">
+        <button class="acc-trigger" onclick="toggleAcc('acc-lm')">
+          <div class="acc-trigger-left">
+            <span class="acc-trigger-store">Lower Manhattan</span>
+            <span class="acc-trigger-headline">Protect the Morning Rush</span>
+          </div>
+          <span class="acc-arrow">▾</span>
+        </button>
+        <div class="acc-content">
+          <div class="acc-section-title">Target Daypart</div>
+          <p style="font-size:13px; color:var(--text-secondary);">Morning Rush · 6–10 AM · 54% of daily revenue</p>
+          <div class="acc-section-title">Push Products</div>
+          <ul class="rec-items">
+            <li>Sustainably Grown Organic Lg</li><li>Latte Rg</li><li>Dark Chocolate Lg</li><li>Cappuccino Lg</li>
+          </ul>
+          <div class="acc-section-title">Attach / Bundle</div>
+          <ul class="rec-items"><li>Chocolate Croissant</li><li>Ginger Scone</li></ul>
+          <div class="acc-section-title">How to Execute</div>
+          <ul class="rec-items">
+            <li>Put a pairing sign at the counter showing coffee + pastry and the price</li>
+            <li>Staff script at handover: "Would you like a scone with that?"</li>
+            <li>All bakery items fully stocked and visible on the counter by 6 AM</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="acc-item" id="acc-hk">
+        <button class="acc-trigger" onclick="toggleAcc('acc-hk')">
+          <div class="acc-trigger-left">
+            <span class="acc-trigger-store">Hell's Kitchen</span>
+            <span class="acc-trigger-headline">Build the Late Day</span>
+          </div>
+          <span class="acc-arrow">▾</span>
+        </button>
+        <div class="acc-content">
+          <div class="acc-section-title">Target Daypart</div>
+          <p style="font-size:13px; color:var(--text-secondary);">Late Day · 3–8 PM · 21% of daily revenue (most underdeveloped)</p>
+          <div class="acc-section-title">Push Products</div>
+          <ul class="rec-items">
+            <li>Sustainably Grown Organic Lg</li><li>Morning Sunrise Chai Lg</li><li>Dark Chocolate Lg</li><li>Jamaican Coffee River Lg</li>
+          </ul>
+          <div class="acc-section-title">Attach / Bundle</div>
+          <ul class="rec-items"><li>Scottish Cream Scone</li><li>Cranberry Scone</li></ul>
+          <div class="acc-section-title">How to Execute</div>
+          <ul class="rec-items">
+            <li>Write today's afternoon featured drink + scone on the chalkboard</li>
+            <li>Staff one-liner for Jamaican Coffee River: "Smooth and earthy — very different from the regular."</li>
+            <li>Place coffee beans near the register; ask afternoon visitors: "Want a bag to take home?"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="acc-item" id="acc-ast">
+        <button class="acc-trigger" onclick="toggleAcc('acc-ast')">
+          <div class="acc-trigger-left">
+            <span class="acc-trigger-store">Astoria</span>
+            <span class="acc-trigger-headline">Deepen the Late Day</span>
+          </div>
+          <span class="acc-arrow">▾</span>
+        </button>
+        <div class="acc-content">
+          <div class="acc-section-title">Target Daypart</div>
+          <p style="font-size:13px; color:var(--text-secondary);">Late Day · 2–7 PM · 28% of daily revenue (best late-day in network)</p>
+          <div class="acc-section-title">Push Products</div>
+          <ul class="rec-items">
+            <li>Sustainably Grown Organic Lg</li><li>Dark Chocolate Lg</li><li>Morning Sunrise Chai Lg</li><li>Dark Chocolate Rg</li>
+          </ul>
+          <div class="acc-section-title">Attach / Bundle</div>
+          <ul class="rec-items"><li>Scottish Cream Scone</li><li>Chocolate Croissant</li></ul>
+          <div class="acc-section-title">How to Execute</div>
+          <ul class="rec-items">
+            <li>Put a drink + bakery combo sign near the cashier in the afternoon</li>
+            <li>Change the featured afternoon combo once a week to keep regulars interested</li>
+            <li>Start the store's loyalty stamp card here if one is available — afternoon regulars are the best audience</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REVENUE LOGIC BRIDGE -->
+<section id="revenue-logic">
+  <div class="container">
+    <div class="section-label">From Recommendation to Revenue</div>
+    <h2 class="section-title">How the Action<br>Creates the Money.</h2>
+    <p class="section-subtitle">Each recommendation targets a specific behavioral gap in a specific time window. Here is the causal chain — from operational change to incremental revenue — for each store.</p>
+
+    <div class="logic-flow">
+      <div class="logic-step">
+        <div class="logic-step-num">Step 1</div>
+        <div class="logic-step-label">Identify the Traffic Window</div>
+      </div>
+      <div class="logic-step">
+        <div class="logic-step-num">Step 2</div>
+        <div class="logic-step-label">Deploy the Right Product</div>
+      </div>
+      <div class="logic-step">
+        <div class="logic-step-num">Step 3</div>
+        <div class="logic-step-label">Shift Customer Behavior</div>
+      </div>
+      <div class="logic-step">
+        <div class="logic-step-num">Step 4</div>
+        <div class="logic-step-label">Lift Attach Rate +3pp</div>
+      </div>
+      <div class="logic-step">
+        <div class="logic-step-num">Step 5</div>
+        <div class="logic-step-label">Incremental Revenue</div>
+      </div>
+    </div>
+
+    <div class="journey-grid">
+
+      <div class="journey-card">
+        <div class="journey-card-header">
+          <div class="journey-card-store">Lower Manhattan</div>
+          <div class="journey-card-mission">Dense Morning Traffic.<br>Underleveraged Bakery.</div>
+        </div>
+        <div class="journey-steps">
+          <div class="journey-row">
+            <div class="journey-row-icon">⏰</div>
+            <div>
+              <div class="journey-row-label">Traffic Window</div>
+              <div class="journey-row-text">54% of daily revenue lands before 11 AM — the highest morning concentration in the network. The window is both the opportunity and the constraint.</div>
+            </div>
+          </div>
+          <div class="journey-row">
+            <div class="journey-row-icon">☕</div>
+            <div>
+              <div class="journey-row-label">The Action</div>
+              <div class="journey-row-text">Fast-moving premium drinks positioned at the counter with a visible, pre-bagged bakery item alongside — one-word staff prompt at the moment of payment.</div>
+            </div>
+          </div>
+          <div class="journey-row">
+            <div class="journey-row-icon">🔄</div>
+            <div>
+              <div class="journey-row-label">Behavior Shift</div>
+              <div class="journey-row-text">Time-pressed commuters don't browse — they respond to prompts. A visible pairing at the point of decision, with no extra effort required, converts a single-item visit into a two-item transaction.</div>
+            </div>
+          </div>
+          <div class="journey-row">
+            <div class="journey-row-icon">📈</div>
+            <div>
+              <div class="journey-row-label">Why the Math Works</div>
+              <div class="journey-row-text">Because morning traffic is the densest in the network, even a small attach-rate gain applies across a very large daily transaction base — creating disproportionate revenue leverage relative to the effort required.</div>
+            </div>
+          </div>
+        </div>
+        <div class="journey-card-footer">
+          <div>
+            <div class="journey-footer-label">Est. 6-Month Uplift</div>
+            <div class="journey-footer-amount">$3,054</div>
+          </div>
+          <div class="journey-footer-tag">Modeled · +3pp attach</div>
+        </div>
+      </div>
+
+      <div class="journey-card">
+        <div class="journey-card-header">
+          <div class="journey-card-store">Hell's Kitchen</div>
+          <div class="journey-card-mission">Strong Morning Base.<br>Underdeveloped Late Day.</div>
+        </div>
+        <div class="journey-steps">
+          <div class="journey-row">
+            <div class="journey-row-icon">⏰</div>
+            <div>
+              <div class="journey-row-label">Traffic Window</div>
+              <div class="journey-row-text">Only 21% of daily revenue arrives after 2 PM — the weakest late-day monetization in the network, despite the neighborhood drawing leisure and mixed-visitor foot traffic through the evening.</div>
+            </div>
+          </div>
+          <div class="journey-row">
+            <div class="journey-row-icon">☕</div>
+            <div>
+              <div class="journey-row-label">The Action</div>
+              <div class="journey-row-text">Specialty and discovery-oriented beverages (Jamaican Coffee River, Morning Sunrise Chai) presented via an afternoon chalkboard feature — staff equipped with a short, confident descriptor.</div>
+            </div>
+          </div>
+          <div class="journey-row">
+            <div class="journey-row-icon">🔄</div>
+            <div>
+              <div class="journey-row-label">Behavior Shift</div>
+              <div class="journey-row-text">Leisure visitors and post-work explorers are more receptive to a considered choice than commuters. A specialty prompt converts a routine visit into a higher-value, attach-friendly transaction.</div>
+            </div>
+          </div>
+          <div class="journey-row">
+            <div class="journey-row-icon">📈</div>
+            <div>
+              <div class="journey-row-label">Why the Math Works</div>
+              <div class="journey-row-text">The late-day base at HK is smaller than LM's morning — so the absolute uplift is modest. But this is not about defending existing revenue. It is about building a new late-day revenue layer that currently barely exists.</div>
+            </div>
+          </div>
+        </div>
+        <div class="journey-card-footer">
+          <div>
+            <div class="journey-footer-label">Est. 6-Month Uplift</div>
+            <div class="journey-footer-amount">$1,191</div>
+          </div>
+          <div class="journey-footer-tag">Modeled · +3pp attach</div>
+        </div>
+      </div>
+
+      <div class="journey-card">
+        <div class="journey-card-header">
+          <div class="journey-card-store">Astoria</div>
+          <div class="journey-card-mission">Best Late-Day Profile.<br>Repeatable Occasion to Build.</div>
+        </div>
+        <div class="journey-steps">
+          <div class="journey-row">
+            <div class="journey-row-icon">⏰</div>
+            <div>
+              <div class="journey-row-label">Traffic Window</div>
+              <div class="journey-row-text">28% of daily revenue arrives after 2 PM — the strongest late-day share in the network. The occasion already exists. The opportunity is to make it more intentional and more valuable per visit.</div>
+            </div>
+          </div>
+          <div class="journey-row">
+            <div class="journey-row-icon">☕</div>
+            <div>
+              <div class="journey-row-label">The Action</div>
+              <div class="journey-row-text">Afternoon-friendly pairings (Chai + scone) framed as a "treat" occasion, supported by weekly rotating features that give regulars a reason to try something new rather than default to their usual order.</div>
+            </div>
+          </div>
+          <div class="journey-row">
+            <div class="journey-row-icon">🔄</div>
+            <div>
+              <div class="journey-row-label">Behavior Shift</div>
+              <div class="journey-row-text">Neighborhood regulars with longer dwell time are the most receptive audience for attach in the network — slower queues and staff familiarity support higher conversion than a commuter environment.</div>
+            </div>
+          </div>
+          <div class="journey-row">
+            <div class="journey-row-icon">📈</div>
+            <div>
+              <div class="journey-row-label">Why the Math Works</div>
+              <div class="journey-row-text">Astoria's opportunity sits between the two others. The transaction base is moderate, but the dwell-time advantage makes the behavioral shift more achievable — and a loyalty mechanic could compound the return over time.</div>
+            </div>
+          </div>
+        </div>
+        <div class="journey-card-footer">
+          <div>
+            <div class="journey-footer-label">Est. 6-Month Uplift</div>
+            <div class="journey-footer-amount">$1,658</div>
+          </div>
+          <div class="journey-footer-tag">Modeled · +3pp attach</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="logic-caveat">
+      <strong>Modeling note:</strong> This section explains the business logic behind the uplift estimates — not the formula. The causal chain (traffic window → product push → attach lift → incremental units → revenue) is the same for all three stores; what differs is the size of the base, the nature of the customer, and the behavioral receptivity in each daypart. Final uplift figures are modeled projections based on a conservative +3 percentage point attach-rate improvement assumption. They are not observed outcomes and should be used as directional sizing benchmarks only.
+    </div>
+  </div>
+</section>
+
+<!-- UPLIFT -->
+<section id="uplift">
+  <div class="container">
+    <div class="section-label">Estimated Revenue Uplift</div>
+    <h2 class="section-title">Is the Effort<br>Worth It?</h2>
+    <p class="section-subtitle">Conservative modeled estimates — based on a +3 percentage point improvement in attach rate during the target daypart for each store. These are projections, not measured outcomes.</p>
+
+    <div class="uplift-grid">
+      <div class="uplift-card">
+        <div class="uplift-store">Lower Manhattan</div>
+        <div class="uplift-amount">$3,054</div>
+        <div class="uplift-pct">1.3% of store revenue over 6 months</div>
+        <div class="uplift-tag">Modeled estimate</div>
+      </div>
+      <div class="uplift-card">
+        <div class="uplift-store">Astoria</div>
+        <div class="uplift-amount">$1,658</div>
+        <div class="uplift-pct">0.71% of store revenue over 6 months</div>
+        <div class="uplift-tag">Modeled estimate</div>
+      </div>
+      <div class="uplift-card">
+        <div class="uplift-store">Hell's Kitchen</div>
+        <div class="uplift-amount">$1,191</div>
+        <div class="uplift-pct">0.50% of store revenue over 6 months</div>
+        <div class="uplift-tag">Modeled estimate</div>
+      </div>
+    </div>
+
+    <div class="methodology-box">
+      <div class="methodology-title">How the Uplift Was Estimated</div>
+      <div class="method-steps">
+        <div class="method-step">
+          <div class="method-num">1</div>
+          <div class="method-text"><strong>Target daypart transaction volume.</strong> For each store, the number of daily transactions in the target daypart was estimated using total line items ÷ operating days × daypart %, giving the baseline exposure window.</div>
+        </div>
+        <div class="method-step">
+          <div class="method-num">2</div>
+          <div class="method-text"><strong>Current attach rate baseline.</strong> The current secondary category (bakery) attach rate during the target daypart was estimated from actual line-item data at each store location.</div>
+        </div>
+        <div class="method-step">
+          <div class="method-num">3</div>
+          <div class="method-text"><strong>+3pp conservative incremental improvement.</strong> A +3 percentage point increase in attach rate was applied — conservative relative to the 3–8pp range typically seen in retail upsell programs. This was multiplied by avg bakery item price and annualized to 180 operating days.</div>
+        </div>
+      </div>
+      <div class="method-caveat">
+        These estimates are directional order-of-magnitude figures only. Actual results depend on execution quality, staff training, signage effectiveness, and customer mix. Results should be treated as a sizing benchmark, not a forecast. Recommend setting a 90-day baseline measurement period before evaluating program performance.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- APPENDIX -->
+<section id="appendix">
+  <div class="container">
+    <div class="section-label">Appendix</div>
+    <h2 class="section-title">Data & Methodology Notes</h2>
+    <p class="section-subtitle">For technical reviewers and portfolio audiences who want to understand how this analysis was built.</p>
+
+    <div class="appendix-grid">
+      <div class="appendix-card">
+        <div class="appendix-card-title">Dataset</div>
+        <p>Source: "Coffee Sales" dataset published on Kaggle by Ahmed Abbas. Dataset: Maven Roasters — a fictional NYC coffee chain. Rows: 149,116 transaction line items. Columns: transaction_id, transaction_date, transaction_time, transaction_qty, store_id, store_location, product_id, unit_price, product_category, product_type, product_detail. Period: January 1 – June 30, 2023. Each row represents a single product line item from a single visit.</p>
+      </div>
+      <div class="appendix-card">
+        <div class="appendix-card-title">Data Structure</div>
+        <p>The dataset is structured as one product per row. Transaction IDs appear to be unique per line item, meaning direct Apriori basket analysis at the product level is not feasible. Category-level analysis was conducted instead, treating store × date × hour blocks as the unit of association. All revenue figures represent estimated gross sales (unit_price × transaction_qty).</p>
+      </div>
+      <div class="appendix-card">
+        <div class="appendix-card-title">Analytical Methods</div>
+        <p>EDA conducted in Python (pandas). Revenue share, category mix, and daypart breakdowns derived from groupby aggregations on the full dataset. Daypart buckets: Morning Rush = before 11 AM, Midday = 11 AM–2 PM, Late Day = after 2 PM. Hourly charts reflect aggregate revenue by hour across the full 6-month period. Category over/under-index computed as store % ÷ network % for each category.</p>
+      </div>
+      <div class="appendix-card">
+        <div class="appendix-card-title">Limitations & Caveats</div>
+        <p>No individual receipt-level basket data available — bundle recommendations are based on category co-occurrence patterns and top-performing products by store, not measured cross-sell rates. Uplift estimates use a uniform +3pp attach improvement assumption across all stores — actual improvement will vary. All customer persona descriptions are inferred from demand pattern data, not from customer survey or loyalty data. This is a fictional dataset; all conclusions apply only within this analytical frame.</p>
+      </div>
+    </div>
+
+    <div class="appendix-footer">
+      <span>Maven Roasters NYC · Sales Performance Review · Jan–Jun 2023</span>
+      <span>Prepared by Rahmananda Ridho Gamawan · Portfolio Analysis</span>
+    </div>
+  </div>
+</section>
+
+<script>
+// ══════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════
+const BRAND = {
+  brown700: '#6B3120',
+  brown600: '#8B4513',
+  brown500: '#A0522D',
+  brown400: '#C1724F',
+  brown300: '#D4956E',
+  brown200: '#E8C5A8',
+  brown100: '#F5E6D8',
+  gold:     '#D4A853',
+  dark:     '#2C1000',
+};
+
+const DATA = {
+  monthly: {
+    labels: ['Jan 2023','Feb 2023','Mar 2023','Apr 2023','May 2023','Jun 2023'],
+    revenue: [76145, 74745, 101555, 118941, 156728, 166698],
+    dailySold: [805, 825, 990, 1225, 1558, 1704],
+    aup: [3.29, 3.25, 3.26, 3.27, 3.26, 3.27],
+  },
+  stores: {
+    labels: ["Hell's Kitchen", 'Astoria', 'Lower Manhattan'],
+    revenue: [236511, 232244, 230057],
+    qty: [71737, 70991, 71742],
+    aup: [3.30, 3.27, 3.21],
+  },
+  category: {
+    astoria:        { Coffee: 38.64, Tea: 30.59, Bakery: 11.45, 'Drinking Chocolate': 11.34, 'Coffee Beans': 4.40, Others: 3.58 },
+    hellsKitchen:   { Coffee: 38.72, Tea: 29.23, Bakery: 11.58, 'Drinking Chocolate':  9.97, 'Coffee Beans': 7.88, Others: 2.62 },
+    lowerManhattan: { Coffee: 38.90, Tea: 29.21, Bakery: 12.31, 'Drinking Chocolate':  9.78, 'Coffee Beans': 4.88, Others: 4.92 },
+  },
+  hourly: {
+    labels: [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+    astoria:        [9200,18700,22100,24300,19800,17200,16500,15900,15600,15400,15500,15900,15100,13200,7400],
+    hellsKitchen:   [2100,14800,30700,33600,32200,19800,12800,11400,10700,10600,10800,11400,10900,8100,890],
+    lowerManhattan: [3900,17100,29200,30500,29600,11100,11600,11200,10900,11000,10800,10600,7300,4400,320],
+  },
+};
+
+// ══════════════════════════════════════════════
+// CHART DEFAULTS
+// ══════════════════════════════════════════════
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#8B6B52';
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+Chart.defaults.plugins.legend.labels.padding = 16;
+const GRID_COLOR = 'rgba(28,10,0,0.06)';
+
+// ══════════════════════════════════════════════
+// CHARTS
+// ══════════════════════════════════════════════
+
+// Monthly Revenue
+new Chart(document.getElementById('chartMonthlyRevenue'), {
+  type: 'line',
+  data: {
+    labels: DATA.monthly.labels,
+    datasets: [{
+      label: 'Monthly Revenue ($)',
+      data: DATA.monthly.revenue,
+      borderColor: BRAND.brown600,
+      backgroundColor: 'rgba(139,69,19,0.08)',
+      tension: 0.35, fill: true,
+      pointBackgroundColor: BRAND.brown600,
+      pointRadius: 5, pointHoverRadius: 7,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { grid: { color: GRID_COLOR }, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'k' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// Volume vs Price
+new Chart(document.getElementById('chartVolumeLed'), {
+  type: 'line',
+  data: {
+    labels: DATA.monthly.labels,
+    datasets: [
+      {
+        label: 'Daily Units Sold (left axis)',
+        data: DATA.monthly.dailySold,
+        borderColor: BRAND.brown500,
+        backgroundColor: 'rgba(160,82,45,0.07)',
+        tension: 0.35, fill: true,
+        pointBackgroundColor: BRAND.brown500,
+        pointRadius: 4, yAxisID: 'y',
+      },
+      {
+        label: 'Avg Unit Price ($, right)',
+        data: DATA.monthly.aup,
+        borderColor: BRAND.gold,
+        borderDash: [4,3],
+        tension: 0.2, fill: false,
+        pointBackgroundColor: BRAND.gold,
+        pointRadius: 4, yAxisID: 'y1',
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { position: 'bottom' } },
+    scales: {
+      y: { grid: { color: GRID_COLOR }, title: { display: true, text: 'Daily Units' } },
+      y1: { position: 'right', grid: { display: false }, min: 3.0, max: 3.5,
+        ticks: { callback: v => '$' + v.toFixed(2) },
+        title: { display: true, text: 'Avg Price ($)' }
+      },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// Store Revenue
+new Chart(document.getElementById('chartStoreRevenue'), {
+  type: 'bar',
+  data: {
+    labels: DATA.stores.labels,
+    datasets: [{
+      label: 'Revenue ($)',
+      data: DATA.stores.revenue,
+      backgroundColor: [BRAND.brown700, BRAND.brown500, BRAND.brown400],
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true, indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: GRID_COLOR }, ticks: { callback: v => '$' + (v/1000).toFixed(0)+'k' } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+// Store Volume
+new Chart(document.getElementById('chartStoreVolume'), {
+  type: 'bar',
+  data: {
+    labels: DATA.stores.labels,
+    datasets: [{
+      label: 'Items Sold',
+      data: DATA.stores.qty,
+      backgroundColor: [BRAND.brown700, BRAND.brown500, BRAND.brown400],
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true, indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: GRID_COLOR }, min: 70000, ticks: { callback: v => (v/1000).toFixed(0)+'k' } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+// Category Mix Chart
+const catColors = [BRAND.brown700, BRAND.brown400, BRAND.brown300, BRAND.gold, BRAND.dark, BRAND.brown200];
+const catLabels = ['Coffee','Tea','Bakery','Drinking Chocolate','Coffee Beans','Others'];
+
+function buildCatData(stores) {
+  return {
+    labels: catLabels,
+    datasets: stores.map((s, i) => ({
+      label: s.label,
+      data: catLabels.map(c => s.data[c] || 0),
+      backgroundColor: catColors[i % catColors.length],
+      borderRadius: 4,
+    }))
+  };
+}
+
+const catChartCtx = document.getElementById('chartCategoryMix');
+let catChart = new Chart(catChartCtx, {
+  type: 'bar',
+  data: buildCatData([
+    { label: 'Astoria', data: DATA.category.astoria },
+    { label: "Hell's Kitchen", data: DATA.category.hellsKitchen },
+    { label: 'Lower Manhattan', data: DATA.category.lowerManhattan },
+  ]),
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { position: 'bottom' } },
+    scales: {
+      y: { grid: { color: GRID_COLOR }, ticks: { callback: v => v + '%' }, max: 45 },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+function showCatChart(store, btn) {
+  document.querySelectorAll('.category-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  let datasets, title;
+  if (store === 'all') {
+    title = 'Category Revenue Share — All Stores (Normalized)';
+    datasets = [
+      { label: 'Astoria', data: DATA.category.astoria },
+      { label: "Hell's Kitchen", data: DATA.category.hellsKitchen },
+      { label: 'Lower Manhattan', data: DATA.category.lowerManhattan },
+    ];
+  } else if (store === 'astoria') {
+    title = 'Category Revenue Share — Astoria';
+    datasets = [{ label: 'Astoria', data: DATA.category.astoria }];
+  } else if (store === 'hellskitchen') {
+    title = "Category Revenue Share — Hell's Kitchen";
+    datasets = [{ label: "Hell's Kitchen", data: DATA.category.hellsKitchen }];
+  } else {
+    title = 'Category Revenue Share — Lower Manhattan';
+    datasets = [{ label: 'Lower Manhattan', data: DATA.category.lowerManhattan }];
+  }
+  document.getElementById('catChartTitle').textContent = title;
+  catChart.data = buildCatData(datasets);
+  catChart.update();
+}
+
+// Hourly chart
+new Chart(document.getElementById('chartHourly'), {
+  type: 'line',
+  data: {
+    labels: DATA.hourly.labels.map(h => h + ':00'),
+    datasets: [
+      {
+        label: 'Astoria',
+        data: DATA.hourly.astoria,
+        borderColor: BRAND.brown400,
+        backgroundColor: 'rgba(193,114,79,0.06)',
+        tension: 0.35, fill: false,
+        pointRadius: 3,
+      },
+      {
+        label: "Hell's Kitchen",
+        data: DATA.hourly.hellsKitchen,
+        borderColor: BRAND.brown700,
+        backgroundColor: 'rgba(107,49,32,0.06)',
+        tension: 0.35, fill: false,
+        pointRadius: 3,
+      },
+      {
+        label: 'Lower Manhattan',
+        data: DATA.hourly.lowerManhattan,
+        borderColor: BRAND.gold,
+        backgroundColor: 'rgba(212,168,83,0.06)',
+        tension: 0.35, fill: false,
+        pointRadius: 3,
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { position: 'bottom' } },
+    scales: {
+      y: { grid: { color: GRID_COLOR }, ticks: { callback: v => '$' + (v/1000).toFixed(0)+'k' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ══════════════════════════════════════════════
+// MAP
+// ══════════════════════════════════════════════
+const map = L.map('map', { scrollWheelZoom: false }).setView([40.740, -73.970], 11);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap, © CARTO',
+  maxZoom: 18,
+}).addTo(map);
+
+const stores = [
+  {
+    name: 'Lower Manhattan',
+    lat: 40.7074, lng: -73.9989,
+    opportunity: 'largest',
+    radius: 18,
+    push: 'Sustainably Grown Organic Lg · Latte Rg · Dark Chocolate Lg · Cappuccino Lg',
+    attach: 'Chocolate Croissant · Ginger Scone',
+    uplift: '+$3,054 over 6 months',
+  },
+  {
+    name: "Hell's Kitchen",
+    lat: 40.7638, lng: -73.9918,
+    opportunity: 'medium',
+    radius: 15,
+    push: 'Sustainably Grown Organic Lg · Morning Sunrise Chai Lg · Jamaican Coffee River Lg',
+    attach: 'Scottish Cream Scone · Cranberry Scone',
+    uplift: '+$1,191 over 6 months',
+  },
+  {
+    name: 'Astoria',
+    lat: 40.7721, lng: -73.9301,
+    opportunity: 'medium-large',
+    radius: 16,
+    push: 'Sustainably Grown Organic Lg · Dark Chocolate Lg · Morning Sunrise Chai Lg',
+    attach: 'Scottish Cream Scone · Chocolate Croissant',
+    uplift: '+$1,658 over 6 months',
+  },
+];
+
+stores.forEach(s => {
+  const marker = L.circleMarker([s.lat, s.lng], {
+    radius: s.radius,
+    color: '#6B3120', weight: 2,
+    fillColor: '#8B4513', fillOpacity: 0.85,
+  }).addTo(map);
+
+  const popupContent = `
+    <div class="map-popup">
+      <div class="map-popup-store">📍 ${s.name}</div>
+      <div class="map-popup-section">
+        <div class="map-popup-label">Push Products</div>
+        <div class="map-popup-items">${s.push}</div>
+      </div>
+      <div class="map-popup-section">
+        <div class="map-popup-label">Attach / Bundle</div>
+        <div class="map-popup-items">${s.attach}</div>
+      </div>
+      <div class="map-popup-uplift">
+        <span style="font-size:11px;color:#8B6B52;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Est. Uplift</span>
+        <strong>${s.uplift}</strong>
+      </div>
+    </div>
+  `;
+
+  marker.bindPopup(popupContent, {
+    maxWidth: 300,
+    closeButton: false,
+  });
+
+  // Desktop hover
+  marker.on('mouseover', function() { this.openPopup(); });
+  // Touch / click always works
+  marker.on('click', function() { this.openPopup(); });
+});
+
+// ══════════════════════════════════════════════
+// RECOMMENDATIONS TABS
+// ══════════════════════════════════════════════
+function showRec(id) {
+  document.querySelectorAll('.rec-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('rec-' + id).classList.add('active');
+  document.querySelectorAll('.rec-tabs .tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['lm','hk','ast'][i] === id);
+  });
+}
+
+// ══════════════════════════════════════════════
+// ACCORDION (mobile recs)
+// ══════════════════════════════════════════════
+function toggleAcc(id) {
+  const item = document.getElementById(id);
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+</script>
+</body>
+</html>
